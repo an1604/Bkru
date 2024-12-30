@@ -45,6 +45,13 @@ export default function LoginScreen() {
             onChangeText={setEmail}
           />
           <Button title="Submit Email" onPress={handleEmailSubmit} />
+          
+          <Button
+            title="Signup"
+            onPress={() => router.push('/SignUpScreen')} // Navigate to SignUpScreen
+            color="#007BFF"
+          />
+
         </>
       ) : (
         <>
@@ -59,7 +66,7 @@ export default function LoginScreen() {
           <Button title="Submit Code" onPress={handleCodeSubmit} />
         </>
       )}
-    </View>
+</View>
   );
 }
 

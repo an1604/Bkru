@@ -14,6 +14,17 @@ export default function LoginScreen() {
     } else {
       // Simulate sending 2FA code to the email (you can add your API call here)
       Alert.alert('2FA Code Sent', `A 2FA code has been sent to ${email}`);
+      
+      // Sending a POST request to the mock server (make it handle the simple cases for now)
+      fetch('http://192.168.1.154:3000/get_mfa_key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email }),
+      });
+      
+
       setStep(2); // Move to Step 2: Enter 2FA code
     }
   };
@@ -21,15 +32,45 @@ export default function LoginScreen() {
   const handleCodeSubmit = () => {
     if (code.trim() === '') {
       Alert.alert('Error', 'Please enter the 2FA code');
-    } else {
-      // Simulate verifying the 2FA code (you can add your API call here)
-      Alert.alert('Success', `Logged in with email: ${email}`);
-      router.push('/');
-      setStep(1); // Reset to Step 1 for the next login
-      setEmail(''); 
-      setCode(''); 
+      return;
     }
+  
+    // Send POST request to the server
+    fetch('http://192.168.1.154:3000/confirm_code', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code: code }),
+    })
+      .then((response) => {
+        if (response.ok) {
+          return response.json(); // Parse response body as JSON if request is successful
+        } else {
+          throw new Error('Failed to log in'); // Throw an error for non-2xx responses
+        }
+      })
+      .then((data) => {
+        // Successful login
+        Alert.alert('Success', `Logged in with email: ${email}`);
+        console.log('Server response:', data); // Log server response for debugging
+  
+        // Navigate to the home page
+        router.push('/');
+      })
+      .catch((error) => {
+        // Handle network errors or non-2xx responses
+        console.error('Error:', error);
+        Alert.alert('Failed', `Login failed: ${error.message}`);
+      })
+      .finally(() => {
+        // Reset state in all cases (success or failure)
+        setStep(1);
+        setEmail('');
+        setCode('');
+      });
   };
+  
 
   return (
     <View style={styles.container}>

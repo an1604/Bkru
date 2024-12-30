@@ -24,7 +24,31 @@ const SignUpScreen = () => {
         else {
               // Simulate sending 2FA code to the email (you can add your API call here)
               Alert.alert('2FA Code Sent', `A 2FA code has been sent to ${email}`);
-              setStep(2); // Move to Step 2: Enter 2FA code
+
+              // Sending a POST request to the mock server (make it handle the simple cases for now)
+              fetch('http://192.168.1.154:3000/register', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    email: email,
+                    username: username,
+                    password: password
+                }),
+              }).then((response) =>{
+                if (response.ok){
+                    return response.json(); // Parse response body as JSON if request is successful
+                }
+                else{
+                    throw new Error('Failed to resigter a new user'); // Throw an error for non-2xx responses
+                }
+              }).then((data)=>{
+                    setStep(2); // Move to Step 2: Enter 2FA code
+              }).catch((error)=>{
+                console.error('Error:', error);
+                Alert.alert('Failed', `Register failed: ${error.message}`);
+              })
             }
     }
 
@@ -33,11 +57,30 @@ const SignUpScreen = () => {
           Alert.alert('Error', 'Please enter the 2FA code');
         } else {
           // Simulate verifying the 2FA code (you can add your API call here)
-          Alert.alert('Success', `Logged in with email: ${email}`);
-          router.push('/');
-          setStep(1); // Reset to Step 1 for the next login
-          setEmail(''); 
-          setCode(''); 
+          fetch('http://192.168.1.154:3000/confirm_code', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ code: code }),
+          }).then((response) =>{
+            if (response.ok){
+                return response.json();
+            }else{
+                throw new Error('Failed to get a valid response to register new user'); // Throw an error for non-2xx responses
+            }
+          }).then((data) =>{
+            Alert.alert('Success', `Logged in with email: ${email}`);
+            router.push('/');
+            console.log('Server response:', data); // Log server response for debugging
+          }).catch((error) =>{
+            console.error('Error:', error);
+            Alert.alert('Failed', `Register failed: ${error.message}`);
+          }).finally(() =>{
+            setStep(1); // Reset to Step 1 for the next login
+            setEmail(''); 
+            setCode(''); 
+          })
         }
       };
 

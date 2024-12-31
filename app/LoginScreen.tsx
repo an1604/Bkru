@@ -1,76 +1,59 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, Button, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import axios from 'axios';
+import { AuthContext } from './AuthContext';
+
+const BASE_URL = 'http://192.168.1.121:3000'; // Server Base URL
 
 export default function LoginScreen() {
+  const auth = React.useContext(AuthContext);
+
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState(1); // Step 1: Email input, Step 2: 2FA code input
   const router = useRouter();
 
-  const handleEmailSubmit = () => {
+  const handleEmailSubmit = async () => {
     if (email.trim() === '') {
       Alert.alert('Error', 'Please enter a valid email address');
     } else {
-      // Simulate sending 2FA code to the email (you can add your API call here)
-      Alert.alert('2FA Code Sent', `A 2FA code has been sent to ${email}`);
-      
-      // Sending a POST request to the mock server (make it handle the simple cases for now)
-      fetch('http://192.168.1.154:3000/get_mfa_key', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: email }),
-      });
-      
-
-      setStep(2); // Move to Step 2: Enter 2FA code
+      try {
+        // Sending a POST request to get MFA key
+        await axios.post(`${BASE_URL}/get_mfa_key`, { email });
+        Alert.alert('2FA Code Sent', `A 2FA code has been sent to ${email}`);
+        setStep(2); // Move to Step 2: Enter 2FA code
+      } catch (error) {
+        console.error('Error sending email:', error);
+        Alert.alert('Error', 'Failed to send 2FA code. Please try again.');
+      }
     }
   };
 
-  const handleCodeSubmit = () => {
+  const handleCodeSubmit = async () => {
     if (code.trim() === '') {
       Alert.alert('Error', 'Please enter the 2FA code');
       return;
     }
-  
-    // Send POST request to the server
-    fetch('http://192.168.1.154:3000/confirm_code', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ code: code }),
-    })
-      .then((response) => {
-        if (response.ok) {
-          return response.json(); // Parse response body as JSON if request is successful
-        } else {
-          throw new Error('Failed to log in'); // Throw an error for non-2xx responses
-        }
-      })
-      .then((data) => {
-        // Successful login
-        Alert.alert('Success', `Logged in with email: ${email}`);
-        console.log('Server response:', data); // Log server response for debugging
-  
-        // Navigate to the home page
-        router.push('/');
-      })
-      .catch((error) => {
-        // Handle network errors or non-2xx responses
-        console.error('Error:', error);
-        Alert.alert('Failed', `Login failed: ${error.message}`);
-      })
-      .finally(() => {
-        // Reset state in all cases (success or failure)
-        setStep(1);
-        setEmail('');
-        setCode('');
-      });
+
+    try {
+      // Sending a POST request to confirm the 2FA code
+      const response = await axios.post(`${BASE_URL}/confirm_code`, { code });
+      Alert.alert('Success', `Logged in with email: ${email}`);
+      console.log('Server response:', response.data);
+
+      // Navigate to the home page
+      router.push('/');
+    } catch (error: any) {
+      console.error('Error confirming code:', error);
+      Alert.alert('Failed', `Login failed: ${error.response?.data?.message || error.message}`);
+    } finally {
+      // Reset state in all cases (success or failure)
+      setStep(1);
+      setEmail('');
+      setCode('');
+    }
   };
-  
 
   return (
     <View style={styles.container}>
@@ -86,13 +69,11 @@ export default function LoginScreen() {
             onChangeText={setEmail}
           />
           <Button title="Submit Email" onPress={handleEmailSubmit} />
-          
           <Button
             title="Signup"
             onPress={() => router.push('/SignUpScreen')} // Navigate to SignUpScreen
             color="#007BFF"
           />
-
         </>
       ) : (
         <>
@@ -107,7 +88,7 @@ export default function LoginScreen() {
           <Button title="Submit Code" onPress={handleCodeSubmit} />
         </>
       )}
-</View>
+    </View>
   );
 }
 

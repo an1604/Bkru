@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View, TextInput, Button, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Button, Alert, ActivityIndicator } from 'react-native';
 import axios from 'axios';
-
-const BASE_URL = 'http://192.168.1.121:3000'; // Server Base URL
+import { BASE_URL } from './url';
+import { useAuth } from './AuthContext';
 
 const SignUpScreen = () => {
+  const { authState, onLogout, onRegister, onLogin } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
@@ -13,96 +14,114 @@ const SignUpScreen = () => {
   const [code, setCode] = useState('');
   const router = useRouter();
 
+  const register = async () => {
+    const result = await onRegister! (email,username, password);
+    console.log("result:", result);
+    if (result && result.error){
+        Alert.alert(result.msg);
+    }
+    const result1 = await onLogin! (email);
+    if (result1 && result1.error){
+      Alert.alert(result.msg);
+    }
+  };
+  
   const handleRegistrationSubmit = async () => {
-    if (email.trim() === '') {
+    if (!email.trim()) {
       Alert.alert('Error', 'Please enter a valid email address');
-    } else if (username.trim() === '') {
+    } else if (!username.trim()) {
       Alert.alert('Error', 'Please enter a valid username');
-    } else if (password.trim() === '') {
+    } else if (!password.trim()) {
       Alert.alert('Error', 'Please enter a valid password');
     } else {
       try {
-        // Sending a POST request to register
-        const response = await axios.post(`${BASE_URL}/register`, {
-          email,
-          username,
-          password,
-        });
+        const response = await axios.post(`${BASE_URL}/register`, { email, username, password });
         console.log('Server response:', response.data);
         Alert.alert('2FA Code Sent', `A 2FA code has been sent to ${email}`);
-        setStep(2); // Move to Step 2: Enter 2FA code
-      } catch (error) {
+        setStep(2);
+      } catch (error: any) {
         console.error('Error registering user:', error);
-        Alert.alert('Failed', `Register failed: ${error.response?.data?.message || error.message}`);
+        Alert.alert('Failed', `Registration failed: ${error.response?.data?.message || 'Something went wrong. Please try again.'}`);
+      } finally {
       }
     }
   };
 
   const handleCodeSubmit = async () => {
-    if (code.trim() === '') {
+    if (!code.trim()) {
       Alert.alert('Error', 'Please enter the 2FA code');
-    } else {
-      try {
-        // Sending a POST request to confirm the 2FA code
-        const response = await axios.post(`${BASE_URL}/confirm_code`, { code });
-        Alert.alert('Success', `Logged in with email: ${email}`);
-        console.log('Server response:', response.data);
+      return;
+    }
 
-        // Navigate to the home page
-        router.push('/');
-      } catch (error: any) {
-        console.error('Error confirming code:', error);
-        Alert.alert('Failed', `Register failed: ${error.response?.data?.message || error.message}`);
-      } finally {
-        // Reset state
-        setStep(1);
-        setEmail('');
-        setCode('');
-      }
+    try {
+      const response = await axios.post(`${BASE_URL}/confirm_code`, { code });
+      Alert.alert('Success', `Logged in with email: ${email}`);
+      console.log('Server response:', response.data);
+      
+      register();
+      router.push('/');
+    } catch (error: any) {
+      console.error('Error confirming code:', error);
+      Alert.alert('Failed', `Registration failed: ${error.response?.data?.message || 'Something went wrong. Please try again.'}`);
+    } finally {
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sign Up</Text>
-      {step === 1 ? (
+      {authState?.authenticated ? (
         <>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your username"
-            placeholderTextColor="#888"
-            value={username}
-            onChangeText={setUsername}
+          <Text>You are already logged in. You can log out if you really want to.</Text>
+          <Button
+            title="Logout"
+            onPress={async () => {
+              await onLogout();
+              Alert.alert('Logged Out', 'You have been logged out successfully.');
+              router.push('/');
+            }}
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your password"
-            placeholderTextColor="#888"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your email"
-            placeholderTextColor="#888"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-          />
-          <Button title="Register" onPress={handleRegistrationSubmit} />
         </>
       ) : (
         <>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter 2FA code"
-            placeholderTextColor="#888"
-            keyboardType="numeric"
-            value={code}
-            onChangeText={setCode}
-          />
-          <Button title="Submit Code" onPress={handleCodeSubmit} />
+          <Text style={styles.title}>Sign Up</Text>
+          {step === 1 ? (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your username"
+                placeholderTextColor="#888"
+                value={username}
+                onChangeText={setUsername}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your password"
+                placeholderTextColor="#888"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor="#888"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </>
+          ) : (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter 2FA code"
+                placeholderTextColor="#888"
+                keyboardType="numeric"
+                value={code}
+                onChangeText={setCode}
+              />
+            </>
+          )}
         </>
       )}
     </View>

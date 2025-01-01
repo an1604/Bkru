@@ -1,9 +1,15 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const User = require('./models/User');
 
 const app = express();
 const PORT = 3000;
 
+const users = [
+  new User('user@example.com', 'password123', 'Admin')
+];
+const SECRET_KEY = 'your-secret-key';
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -14,8 +20,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Sample In-Memory Database (Mock)
-const mockDB = [];
 // Sample in-memory token store for simplicity (mock)
 let mockTokens = ['validToken123']; // Array to hold valid tokens
 
@@ -38,6 +42,26 @@ app.post('/get_mfa_key', (req, res) => {
   res.status(200).send({ message: '123456', email });
 });
 
+//POST login (Mock!)
+app.post('/login', (req, res) => {
+  console.log('Inside /login route!');
+  
+  const { email } = req.body;
+  const user = users.find(user => user.email === email);
+  
+  if (!user) {
+    return res.status(401).send({ message: 'Invalid email or password' });
+  }
+  const token = jwt.sign({ userId: user.id, email: user.email }, SECRET_KEY, {
+    expiresIn: '1h' // Token expires in 1 hour
+  });
+
+  mockTokens.push(token);
+  res.status(200).send({
+    token: token
+  });
+});
+
 // POST /register
 app.post('/register', (req, res) => {
   const { username, password, email } = req.body;
@@ -52,7 +76,7 @@ app.post('/register', (req, res) => {
     email: ${email},
     password: ${password}`);
   
-  mockDB.push({ username, password, email });
+  users.push(new User(username, email, password ));
   console.log(`[${new Date().toISOString()}] User saved to mockDB:`, { username, email });
   res.status(200).send({ message: 'User saved to DB!', savedUser: { username, email } });
 });
@@ -79,33 +103,6 @@ app.post('/confirm_code', (req, res) => {
       message: "Wrong code, try again!"
     });
   }
-});
-
-
-
-// POST /refresh_token
-app.post('/refresh_token', (req, res) => {
-  const { token } = req.body;
-
-  // Check if the token is provided
-  if (!token) {
-    console.error('No token provided');
-    return res.status(400).send({ message: 'Token is required' });
-  }
-
-  // Validate the token
-  if (!mockTokens.includes(token)) {
-    console.error('Invalid token');
-    return res.status(401).send({ message: 'Invalid token' });
-  }
-
-  // Generate a new token (mock implementation)
-  const newToken = `newToken-${Date.now()}`;
-  mockTokens = mockTokens.filter((t) => t !== token); // Remove the old token
-  mockTokens.push(newToken); // Add the new token
-
-  console.log(`Token refreshed successfully: ${newToken}`);
-  res.status(200).send({ token: newToken });
 });
 
 

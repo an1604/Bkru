@@ -105,6 +105,38 @@ app.post('/confirm_code', (req, res) => {
   }
 });
 
+// GET /user-details
+app.get('/user-details', (req, res) => {
+  const authHeader = req.headers['authorization'];
+
+  if (!authHeader) {
+    return res.status(401).json({ message: 'Authorization header missing!' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ message: 'Token missing!' });
+  }
+
+  try {
+    jwt.verify(token, SECRET_KEY, (err, decoded) => {
+      if (err) {
+        logger.error('Invalid token');
+        return res.status(403).json({ message: 'Invalid or expired token' });
+      }
+
+      const user = users.find((u) => u.email === decoded.email);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({ username: user.username, email: user.email });
+    });
+  } catch (error) {
+    logger.error(`Error fetching user details: ${error.message}`);
+    res.status(500).json({ message: 'Failed to fetch user details' });
+  }
+});
 
 // Global Error Handler
 app.use((err, req, res, next) => {

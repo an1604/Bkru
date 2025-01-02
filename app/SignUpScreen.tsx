@@ -69,62 +69,65 @@ const SignUpScreen = () => {
 
   return (
     <View style={styles.container}>
-      {authState?.authenticated ? (
+  {authState?.authenticated ? (
+    <>
+      <Text>You are already logged in. You can log out if you really want to.</Text>
+      <Button
+        title="Logout"
+        onPress={async () => {
+          await onLogout();
+          Alert.alert('Logged Out', 'You have been logged out successfully.');
+          router.push('/');
+        }}
+      />
+    </>
+  ) : (
+    <>
+      <Text style={styles.title}>Sign Up</Text>
+      {step === 1 ? (
         <>
-          <Text>You are already logged in. You can log out if you really want to.</Text>
-          <Button
-            title="Logout"
-            onPress={async () => {
-              await onLogout();
-              Alert.alert('Logged Out', 'You have been logged out successfully.');
-              router.push('/');
-            }}
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your username"
+            placeholderTextColor="#888"
+            value={username}
+            onChangeText={setUsername}
           />
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your password"
+            placeholderTextColor="#888"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your email"
+            placeholderTextColor="#888"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <Button title="Submit" onPress={handleRegistrationSubmit} />
         </>
       ) : (
         <>
-          <Text style={styles.title}>Sign Up</Text>
-          {step === 1 ? (
-            <>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your username"
-                placeholderTextColor="#888"
-                value={username}
-                onChangeText={setUsername}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor="#888"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                placeholderTextColor="#888"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-              />
-            </>
-          ) : (
-            <>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter 2FA code"
-                placeholderTextColor="#888"
-                keyboardType="numeric"
-                value={code}
-                onChangeText={setCode}
-              />
-            </>
-          )}
+          <TextInput
+            style={styles.input}
+            placeholder="Enter 2FA code"
+            placeholderTextColor="#888"
+            keyboardType="numeric"
+            value={code}
+            onChangeText={setCode}
+          />
+          <Button title="Submit 2FA Code" onPress={handleCodeSubmit} />
         </>
       )}
-    </View>
+    </>
+  )}
+</View>
+
   );
 };
 

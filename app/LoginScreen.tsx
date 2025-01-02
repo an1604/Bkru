@@ -45,9 +45,14 @@ export default function LoginScreen() {
 
     try {
       const response = await axios.post(`${BASE_URL}/confirm_code`, { code });
-      Alert.alert('Success', `Logged in with email: ${email}`);
-      router.push('/'); // Navigate to home
-      login();
+      if (response.status === 200){
+        login();
+        Alert.alert('Success', `Logged in with email: ${email}`);
+        router.push('/'); // Navigate to home
+      }else{
+        Alert.alert('Failed', `Something went wrong while tried logged in with email: ${email}`);
+        router.push('/LoginScreen');
+      }
     } catch (error: any) {
       console.error('Error confirming code:', error);
       Alert.alert(

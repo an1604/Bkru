@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, Button, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
-import { useAuth } from './AuthContext';
-import { BASE_URL } from './url';
+import { BASE_URL } from './constants/url';
+import { useAuth } from './contexts/AuthContext';
 
 export default function LoginScreen() {
   const { authState, onLogout, onLogin } = useAuth();

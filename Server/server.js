@@ -4,12 +4,52 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 
 const app = express();
-const PORT = 3000;
+const PORT = 3001;
 
 const users = [
   new User('user@example.com', 'password123', 'Admin')
 ];
 const SECRET_KEY = 'your-secret-key';
+
+const verifyUser = (authHeader, res) => {
+  let message = 'sucess';
+  if (!authHeader) {
+    message = 'Authorization header missing!'
+    console.log(message);    
+    res.status(401).json({ message:message});
+    return null;
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    message = 'Token missing!';
+    console.log(message);
+    
+    res.status(401).json({ message:message });
+    return null;
+  }
+
+  try {
+    const decoded = jwt.verify(token, SECRET_KEY);
+    const user = users.find((u) => u.email === decoded.email);
+    if (!user) {
+      message = 'User not found';
+      console.log(message);
+      
+      res.status(404).json({ message:message  });
+      return null;
+    }
+    console.log(message);
+    
+    return user; // Return the verified user object
+  } catch (error) {
+    console.error(`Error verifying token: ${error.message}`);
+    res.status(403).json({ message: 'Invalid or expired token' });
+    return null;
+  }
+};
+
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -105,37 +145,29 @@ app.post('/confirm_code', (req, res) => {
   }
 });
 
+// POST /new_notification
+app.post('/new_notification', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const { type } = req.body; 
+
+  const user = verifyUser(authHeader, res);
+  if (!user) {
+    return;
+  }
+  res.status(200).send({
+    type: type,
+    created: true,
+  });
+});
+
+
 // GET /user-details
 app.get('/user-details', (req, res) => {
   const authHeader = req.headers['authorization'];
-
-  if (!authHeader) {
-    return res.status(401).json({ message: 'Authorization header missing!' });
-  }
-
-  const token = authHeader.split(' ')[1];
-  if (!token) {
-    return res.status(401).json({ message: 'Token missing!' });
-  }
-
-  try {
-    jwt.verify(token, SECRET_KEY, (err, decoded) => {
-      if (err) {
-        logger.error('Invalid token');
-        return res.status(403).json({ message: 'Invalid or expired token' });
-      }
-
-      const user = users.find((u) => u.email === decoded.email);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      res.json({ username: user.username, email: user.email });
-    });
-  } catch (error) {
-    logger.error(`Error fetching user details: ${error.message}`);
-    res.status(500).json({ message: 'Failed to fetch user details' });
-  }
+  const user = verifyUser(authHeader,res);
+  if (user)
+    res.json({ username: user.username, email: user.email });
+ 
 });
 
 // Global Error Handler

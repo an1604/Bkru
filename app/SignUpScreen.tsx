@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View, TextInput, Button, Alert, ActivityIndicator } from 'react-native';
 import axios from 'axios';
-import { BASE_URL } from './url';
-import { useAuth } from './AuthContext';
+import { BASE_URL } from './constants/url';
+import { useAuth } from './contexts/AuthContext';
 
 const SignUpScreen = () => {
   const { authState, onLogout, onRegister, onLogin } = useAuth();

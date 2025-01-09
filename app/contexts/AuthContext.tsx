@@ -1,11 +1,13 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { BASE_URL } from './url';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../constants/url';
 
 interface AuthProps {
   authState: { token: string | null; authenticated: boolean | null };
-  onRegister: (email: string,username:string, password: string) => Promise<any>;
+  onRegister: (email: string, username: string, password: string) => Promise<any>;
   onLogin: (email: string) => Promise<any>;
   onLogout: () => Promise<any>;
 }
@@ -21,7 +23,34 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider = ({ children }: any) => {
+// Abstracted storage utility functions
+const isWeb = Platform.OS === 'web';
+
+const setItem = async (key: string, value: string) => {
+  if (isWeb) {
+    await AsyncStorage.setItem(key, value);
+  } else {
+    await SecureStore.setItemAsync(key, value);
+  }
+};
+
+const getItem = async (key: string) => {
+  if (isWeb) {
+    return await AsyncStorage.getItem(key);
+  } else {
+    return await SecureStore.getItemAsync(key);
+  }
+};
+
+const deleteItem = async (key: string) => {
+  if (isWeb) {
+    await AsyncStorage.removeItem(key);
+  } else {
+    await SecureStore.deleteItemAsync(key);
+  }
+};
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [authState, setAuthState] = useState<{
     token: string | null;
     authenticated: boolean | null;
@@ -29,11 +58,10 @@ export const AuthProvider = ({ children }: any) => {
     token: null,
     authenticated: false,
   });
-  
 
   useEffect(() => {
     const loadToken = async () => {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      const token = await getItem(TOKEN_KEY);
       console.log("Token: ", token);
 
       if (token) {
@@ -48,9 +76,9 @@ export const AuthProvider = ({ children }: any) => {
     loadToken();
   }, []);
 
-  const register = async (email: string, password: string, username: string) => {
+  const register = async (email: string, username: string, password: string) => {
     try {
-      return await axios.post(`${API_URL}/register`, { email, password, username });
+      return await axios.post(`${API_URL}/register`, { email, username, password });
     } catch (e) {
       return { error: true, msg: (e as any).response?.data?.msg || "Registration failed" };
     }
@@ -58,8 +86,8 @@ export const AuthProvider = ({ children }: any) => {
 
   const login = async (email: string) => {
     try {
-      console.log("Inside login in AuthContext.tsx! ");
-      
+      console.log("Inside login in AuthContext.tsx!");
+
       const result = await axios.post(`${API_URL}/login`, { email });
       console.log("Result from login: ", result);
 
@@ -69,7 +97,7 @@ export const AuthProvider = ({ children }: any) => {
         authenticated: true,
       });
 
-      await SecureStore.setItemAsync(TOKEN_KEY, result.data.token);
+      await setItem(TOKEN_KEY, result.data.token);
       return result;
     } catch (e) {
       return { error: true, msg: (e as any).response?.data?.msg || "Login failed" };
@@ -78,7 +106,7 @@ export const AuthProvider = ({ children }: any) => {
 
   const logout = async () => {
     try {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
+      await deleteItem(TOKEN_KEY);
       setAuthState({
         token: null,
         authenticated: false,

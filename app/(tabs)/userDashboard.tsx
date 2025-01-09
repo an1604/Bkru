@@ -1,10 +1,13 @@
 import { View, Text, StyleSheet, Button } from 'react-native';
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
-import { BASE_URL } from '../url';
+import { BASE_URL } from '../constants/url';
+import { useRouter } from 'expo-router';
 
 const UserDashboard = () => {
+    const router = useRouter();
+  
   const { authState } = useAuth();
   const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -12,7 +15,7 @@ const UserDashboard = () => {
   const getUserDetails = async () => {
     try {
       const userResponse = await axios.get(`${BASE_URL}/user-details`, {
-        headers: { Authorization: `Bearer ${authState.token}` }, // Include the token
+        headers: { Authorization: `Bearer ${authState.token}` }, 
       });
 
       if (userResponse.status === 200) {
@@ -22,7 +25,7 @@ const UserDashboard = () => {
     } catch (error) {
       console.error('Error fetching user details:', error);
     } finally {
-      setIsLoading(false); // Ensure loading state is updated
+      setIsLoading(false); 
     }
   };
 
@@ -47,7 +50,10 @@ const UserDashboard = () => {
 
           {/* Buttons with spacing */}
           <View style={styles.buttonContainer}>
-            <Button title="Notify!" onPress={() => alert('New notification!')} />
+            <Button title="Notify!" onPress={() => {
+              alert('New notification!');
+              router.push("/newNotification");
+              }} />
           </View>
           <View style={styles.buttonContainer}>
             <Button title="Notification History" onPress={() => alert('Notification History pressed')} />

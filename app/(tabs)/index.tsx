@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { AuthProvider, useAuth } from '../AuthContext';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 
 export default function HomeScreen() {
   const router = useRouter();

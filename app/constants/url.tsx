@@ -1,2 +1,2 @@
 // TODO: CHANGE IT ACCORDING TO THE CURRENT IP ADDRESS!!
-export const BASE_URL = "http://192.168.1.147:3001";
+export const BASE_URL = "http://192.168.1.148:3001";

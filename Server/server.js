@@ -1,4 +1,7 @@
+require('dotenv').config();
+
 const express = require('express');
+const axios = require('axios');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
@@ -6,10 +9,32 @@ const User = require('./models/User');
 const app = express();
 const PORT = 3001;
 
+
 const users = [
   new User('user@example.com', 'password123', 'Admin')
 ];
 const SECRET_KEY = 'your-secret-key';
+
+
+async function getLocation(latitude, longitude) {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+  
+      // Log the full response for debugging
+      console.log('Full Geocoding Response:', data);
+  
+      // Extract and return the address
+      return data.display_name || 'Unknown Address';
+    } catch (error) {
+      console.error('Error fetching address:', error.message);
+      return 'Unknown Address'; // Fallback value
+    }
+  }  
+
 
 const verifyUser = (authHeader, res) => {
   let message = 'sucess';
@@ -48,6 +73,8 @@ const verifyUser = (authHeader, res) => {
     return null;
   }
 };
+
+
 
 
 // Middleware
@@ -103,22 +130,38 @@ app.post('/login', (req, res) => {
 });
 
 // POST /register
-app.post('/register', (req, res) => {
-  const { username, password, email } = req.body;
+app.post('/register', async (req, res) => {
+  const { username, password, email, latitude, longitude } = req.body;
 
-  if (!username || !password || !email) {
+  if (!username || !password || !email || !latitude || !longitude ) {
     console.error(`[${new Date().toISOString()}] Missing fields in /register`);
     return res.status(400).send({ message: 'All fields required!' });
   }
 
-  console.log(`[${new Date().toISOString()}] /register called with data: 
-    username: ${username},
-    email: ${email},
-    password: ${password}`);
-  
-  users.push(new User(username, email, password ));
-  console.log(`[${new Date().toISOString()}] User saved to mockDB:`, { username, email });
-  res.status(200).send({ message: 'User saved to DB!', savedUser: { username, email } });
+  try {
+    // TODO: THIS IS A PAID SERVICE, KEEP IT BLANK FOR NOW!
+    // const location = await getLocation(longitude,latitude);
+    console.log(`The current location of the user named ${username} is ${location}` );
+    
+    const newUser = new User(username, email, password,longitude,latitude);
+    users.push(newUser);
+
+    console.log(`[${new Date().toISOString()}] User saved to mockDB:`, {
+      username,
+      email,
+    });
+
+    res.status(200).send({
+      message: 'User saved to DB!',
+      savedUser: {
+        username,
+        email,
+      },
+    });
+  } catch (error) {
+    console.error(`[${new Date().toISOString()}] Error during registration:`, error.message);
+    res.status(500).send({ message: 'Failed to register user.' });
+  }
 });
 
 // POST /confirm_code

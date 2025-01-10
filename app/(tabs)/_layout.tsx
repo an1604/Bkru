@@ -7,9 +7,12 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useAuth } from '../contexts/AuthContext';
+import userDashboard from './userDashboard';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { authState } = useAuth();
 
   return (
     <Tabs
@@ -34,12 +37,24 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="notifications"
         options={{
-          title: 'Explore',
+          title: 'Notifications',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
+      {authState?.authenticated && (
+            <Tabs.Screen
+              name="userDashboard"
+              options={{
+                title: 'User Dashboard',
+                tabBarIcon: ({ color }) => (
+                  <IconSymbol size={28} name="person.circle.fill" color={color} />
+                ),
+              }}
+            />
+          )}
     </Tabs>
+    
   );
 }
